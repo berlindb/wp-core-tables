@@ -1,0 +1,52 @@
+name: Readiness
+
+# Recomputes this plugin's behavioral (column-flag) readiness against berlindb/core
+# master and opens a PR if the badge changed. These schemas are core-native, so no
+# consumer install or database is needed - just reflect the declared flags and score.
+
+on:
+  schedule:
+    - cron: '37 6 * * *'   # daily
+  workflow_dispatch:
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v6
+
+      - name: Checkout berlindb/core
+        uses: actions/checkout@v6
+        with:
+          repository: berlindb/core
+          ref: master
+          path: berlindb-core
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer config repositories.berlindb-core path ./berlindb-core
+          composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Score readiness
+        run: php bin/readiness-report.php
+
+      - name: Open a PR if the badge changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: readiness/wordpress
+          title: "Update WordPress readiness badge"
+          commit-message: "Update WordPress readiness badge (vs core master)"
+          body: |
+            Automated behavioral-readiness recomputation vs berlindb/core master.
+            (WordPress tables are core-native here, so 100% is expected by construction;
+            a change would mean a core flag went missing.)
+          add-paths: .readiness/
+          delete-branch: true

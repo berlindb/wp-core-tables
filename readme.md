@@ -1,5 +1,12 @@
 # WordPress Core Tables (BerlinDB)
 
+![WordPress readiness](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/berlindb/wp-core-tables/master/.readiness/wordpress.json)
+
+The **readiness** badge is the behavioral (column-flag) score from
+[berlindb/readiness](https://github.com/berlindb/readiness). These schemas are authored
+*on* `berlindb/core`, so 100% is expected **by construction** - it confirms the tables
+are fully reproduced, and would drop only if a core flag went missing.
+
 Registers the WordPress **core** database tables as [BerlinDB](https://github.com/berlindb/core)
 3.x relations — full Schemas (columns + indexes, faithful to `wp-admin/includes/schema.php`),
 plus a Query and Row per table, wired with real relationships.
