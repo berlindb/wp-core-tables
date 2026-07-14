@@ -1,0 +1,28 @@
+# The CORE side of the cross-repo canary.
+#
+# Copy this into berlindb/core as .github/workflows/downstream-canary.yml so that
+# every push to core master runs THIS plugin's test suite against that exact commit -
+# turning wp-core-tables into a downstream integration check for core (it is what
+# would have caught the hook-prefix (#242) and meta-type (#243) friction automatically).
+#
+# Requires a repository secret CANARY_DISPATCH_TOKEN on berlindb/core: a fine-grained
+# PAT (or classic PAT with 'repo' scope) that can dispatch events to
+# berlindb/wp-core-tables.
+
+name: Downstream canary (wp-core-tables)
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger wp-core-tables tests against this core commit
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.CANARY_DISPATCH_TOKEN }}
+          repository: berlindb/wp-core-tables
+          event-type: core-updated
+          client-payload: '{"sha": "${{ github.sha }}"}'

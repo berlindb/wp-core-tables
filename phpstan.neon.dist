@@ -1,0 +1,13 @@
+parameters:
+    # Level 2 is the honest ceiling for a BerlinDB consumer. At level 3+ PHPStan
+    # reports property.phpDocType on every schema's $columns / $indexes: BerlinDB's
+    # base Kern\Schema declares them as array<Column> / array<Index> (the HYDRATED
+    # runtime type), but the documented consumer pattern - the one this whole plugin
+    # follows - is to declare RAW config arrays that BerlinDB hydrates internally.
+    # The two types are genuinely non-covariant, so the noise is core's PhpDoc, not
+    # ours. Tracked as a candidate core issue (base property PhpDoc vs. consumer shape).
+    level: 2
+    paths:
+        - src
+    bootstrapFiles:
+        - vendor/autoload.php
