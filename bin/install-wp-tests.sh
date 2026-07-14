@@ -101,8 +101,15 @@ install_wp() {
 	fi
 
 	download https://wordpress.org/${ARCHIVE_NAME}.zip $TMPDIR/wordpress.zip
-	unzip -q $TMPDIR/wordpress.zip -d $TMPDIR
-	mv $TMPDIR/wordpress/* $WP_CORE_DIR
+	# Extract into a scratch dir, not $TMPDIR directly: WP_CORE_DIR defaults to
+	# $TMPDIR/wordpress, which is exactly where the archive's top-level `wordpress/`
+	# folder lands - so `mv $TMPDIR/wordpress/* $WP_CORE_DIR` would move files onto
+	# themselves. Newer coreutils errors on that self-move (older ones silently
+	# no-op'd), which trips `set -e`.
+	rm -rf $TMPDIR/wp-unzip
+	unzip -q $TMPDIR/wordpress.zip -d $TMPDIR/wp-unzip
+	mv $TMPDIR/wp-unzip/wordpress/* $WP_CORE_DIR
+	rm -rf $TMPDIR/wp-unzip $TMPDIR/wordpress.zip
 }
 
 install_test_suite() {
