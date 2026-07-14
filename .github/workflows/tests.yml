@@ -49,6 +49,14 @@ jobs:
           ref: ${{ needs.resolve.outputs.ref }}
           path: berlindb-core
 
+      - name: Normalize core to a master branch
+        # The composer `path` repo derives its version from the checked-out branch.
+        # A branch ref (push CI) lands on `master` and advertises dev-master, which
+        # satisfies the `berlindb/core: dev-master` requirement - but the canary checks
+        # out an exact SHA (detached HEAD), which advertises no such version and breaks
+        # resolution. Force a local master branch at whatever was checked out.
+        run: git -C berlindb-core checkout -B master
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
