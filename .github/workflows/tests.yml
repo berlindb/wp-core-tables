@@ -67,9 +67,10 @@ jobs:
         # MySQL 8 defaults root to caching_sha2_password, whose first-time auth needs
         # a secure connection; PHP's mysqli connects to the service over plain TCP and
         # fails with "Authentication requires secure connection". Native password auth
-        # has no such requirement. (The mysql CLI tolerates caching_sha2 over TCP, so
-        # this ALTER can run before the switch takes effect.)
-        run: mysql -h 127.0.0.1 -P 3306 -u root -proot --ssl-mode=DISABLED -e "ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';"
+        # has no such requirement. --get-server-public-key lets this one ALTER complete
+        # caching_sha2 auth over the non-TLS connection (fetching the RSA key) so the
+        # switch can be made in the first place.
+        run: mysql -h 127.0.0.1 -P 3306 -u root -proot --ssl-mode=DISABLED --get-server-public-key -e "ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';"
 
       - name: Install subversion
         # The WP test-suite installer fetches tests/phpunit via `svn export`, and the
