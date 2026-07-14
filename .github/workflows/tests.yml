@@ -40,10 +40,10 @@ jobs:
 
     steps:
       - name: Checkout plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Checkout berlindb/core @ ${{ needs.resolve.outputs.ref }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: berlindb/core
           ref: ${{ needs.resolve.outputs.ref }}
