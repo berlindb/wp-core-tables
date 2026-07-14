@@ -161,8 +161,9 @@ install_db() {
 		EXTRA=" --host=$DB_HOSTNAME --protocol=tcp"
 	fi
 
-	# create database
-	mysqladmin create $DB_NAME --user="$DB_USER" --password="$DB_PASS"$EXTRA --ssl=FALSE
+	# create database. --ssl-mode=DISABLED (not the removed --ssl=FALSE) skips TLS to
+	# the local service container, whose cert is self-signed.
+	mysqladmin create $DB_NAME --user="$DB_USER" --password="$DB_PASS"$EXTRA --ssl-mode=DISABLED
 }
 
 install_wp
