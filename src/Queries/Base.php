@@ -30,4 +30,24 @@ abstract class Base extends Query {
 
 	/** No plugin prefix - core tables are named as WordPress names them. */
 	protected $prefix = '';
+
+	/**
+	 * Return every object-cache group this facade uses for rows and lookups.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @return string[]
+	 */
+	public function get_native_cache_groups(): array {
+		$groups  = array( $this->cache_group );
+		$primary = $this->get_primary_column_name();
+
+		foreach ( $this->get_column_names( array( 'cache_key' => true ) ) as $column ) {
+			if ( $column !== $primary ) {
+				$groups[] = "{$this->cache_group}-by-{$column}";
+			}
+		}
+
+		return $groups;
+	}
 }
