@@ -9,6 +9,19 @@ declare( strict_types = 1 );
 
 namespace WPCoreTables;
 
+use WPCoreTables\Queries\CommentMeta;
+use WPCoreTables\Queries\Comments;
+use WPCoreTables\Queries\Links;
+use WPCoreTables\Queries\Options;
+use WPCoreTables\Queries\PostMeta;
+use WPCoreTables\Queries\Posts;
+use WPCoreTables\Queries\TermMeta;
+use WPCoreTables\Queries\TermRelationships;
+use WPCoreTables\Queries\Terms;
+use WPCoreTables\Queries\TermTaxonomy;
+use WPCoreTables\Queries\UserMeta;
+use WPCoreTables\Queries\Users;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -22,6 +35,9 @@ defined( 'ABSPATH' ) || exit;
  * @since 0.1.0
  */
 final class Plugin {
+
+	/** @var array<string, string[]> */
+	private static $native_cache_groups = array();
 
 	/**
 	 * Cache groups for tables that are GLOBAL in multisite (base-prefixed, shared
@@ -52,6 +68,70 @@ final class Plugin {
 		// The one multisite concern is cache scope for the GLOBAL tables.
 		if ( function_exists( 'wp_cache_add_global_groups' ) ) {
 			wp_cache_add_global_groups( self::GLOBAL_CACHE_GROUPS );
+		}
+
+		$hooks = array(
+			'clean_post_cache'           => array( Posts::class ),
+			'clean_comment_cache'        => array( Comments::class ),
+			'clean_user_cache'           => array( Users::class ),
+			'clean_term_cache'           => array( Terms::class, TermTaxonomy::class ),
+			'edited_term_taxonomy'       => array( TermTaxonomy::class ),
+			'deleted_term_taxonomy'      => array( TermTaxonomy::class ),
+			'set_object_terms'           => array( TermRelationships::class, TermTaxonomy::class ),
+			'deleted_term_relationships' => array( TermRelationships::class, TermTaxonomy::class ),
+			'added_option'               => array( Options::class ),
+			'updated_option'             => array( Options::class ),
+			'deleted_option'             => array( Options::class ),
+			'add_link'                   => array( Links::class ),
+			'edit_link'                  => array( Links::class ),
+			'deleted_link'               => array( Links::class ),
+		);
+
+		foreach ( array( 'added', 'updated', 'deleted' ) as $action ) {
+			$hooks[ "{$action}_post_meta" ]    = array( PostMeta::class );
+			$hooks[ "{$action}_comment_meta" ] = array( CommentMeta::class );
+			$hooks[ "{$action}_term_meta" ]    = array( TermMeta::class );
+			$hooks[ "{$action}_user_meta" ]    = array( UserMeta::class );
+		}
+
+		foreach ( $hooks as $hook => $queries ) {
+			add_action(
+				$hook,
+				static function () use ( $queries ): void {
+					self::flush_native_cache_groups( $queries );
+				},
+				10,
+				0
+			);
+		}
+	}
+
+	/**
+	 * Flush facade caches after WordPress changes a table it owns.
+	 *
+	 * A group flush removes result lists, by-ID rows, and secondary lookups.
+	 * If a cache drop-in lacks group flushing, a full flush is required to avoid
+	 * returning stale rows; rotating last_changed alone cannot clear by-ID rows.
+	 *
+	 * @since 0.1.0
+	 *
+	 * @param string[] $queries Query classes for the changed table.
+	 */
+	private static function flush_native_cache_groups( array $queries ): void {
+		if ( ! wp_cache_supports( 'flush_group' ) ) {
+			wp_cache_flush();
+			return;
+		}
+
+		foreach ( $queries as $class ) {
+			if ( ! isset( self::$native_cache_groups[ $class ] ) ) {
+				$query = new $class( array( 'number' => 0 ) );
+				self::$native_cache_groups[ $class ] = $query->get_native_cache_groups();
+			}
+
+			foreach ( self::$native_cache_groups[ $class ] as $group ) {
+				wp_cache_flush_group( $group );
+			}
 		}
 	}
 }

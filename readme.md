@@ -84,6 +84,10 @@ Relationships include: `posts → author (users)`, `posts → meta / comments / 
   native item-meta path hits `wp_postmeta` etc. See berlindb/core#243.
 - **Global caches.** `Plugin::boot()` registers the global tables' cache groups via
   `wp_cache_add_global_groups`, so multisite does not cache shared rows per-site.
+- **Native writes.** WordPress owns these tables and may change them without a BerlinDB
+  Query. The plugin listens to WordPress's mutation and cache-cleaning hooks, then flushes
+  the affected facade cache groups, including secondary lookups. Object-cache drop-ins
+  without group-flush support cause a full cache flush to prevent stale facade rows.
 - **Relationships are unenforced.** They declare how tables join for querying/priming; they
   emit no `FOREIGN KEY` DDL — matching how WordPress core works (no FKs) and the fact that
   the tables are never installed here.
